@@ -43,6 +43,7 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
     private BoxContainer _categoryTabsContainer = default!;
     private BoxContainer _categoryItemsPanel = default!;
     private EmeraldSearchBox _searchBox = default!;
+    private GridContainer? _itemsGrid;
     private string _searchQuery = "";
 
     public DonateShopWindow()
@@ -103,22 +104,23 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
             VerticalExpand = true,
             HorizontalAlignment = HAlignment.Center,
             VerticalAlignment = VAlignment.Center,
-            SeparationOverride = 20
+            SeparationOverride = 12
         };
 
-        var loadingLabel = new Label
+        var loadingLabel = new EmeraldLabel
         {
             Text = "ИДЁТ ЗАГРУЗКА...",
             HorizontalAlignment = HAlignment.Center,
-            FontColorOverride = Color.FromHex("#d4c5e8")
+            Alignment = EmeraldLabel.TextAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 4)
         };
         container.AddChild(loadingLabel);
 
-        var waitLabel = new Label
+        var waitLabel = new EmeraldLabel
         {
             Text = "Подождите, пожалуйста",
             HorizontalAlignment = HAlignment.Center,
-            FontColorOverride = Color.FromHex("#c0b3da")
+            Alignment = EmeraldLabel.TextAlignment.Center
         };
         container.AddChild(waitLabel);
 
@@ -328,8 +330,8 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
             return;
         }
 
-        _topPanel.Visible = false;
-        _tabsContainer.Visible = false;
+        _topPanel.Visible = true;
+        _tabsContainer.Visible = true;
 
         _levelBar.Level = state.Level;
         _levelBar.Experience = state.Experience;
@@ -355,33 +357,36 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
             VerticalExpand = true,
             HorizontalAlignment = HAlignment.Center,
             VerticalAlignment = VAlignment.Center,
-            SeparationOverride = 20
+            SeparationOverride = 16
         };
 
-        var title = new Label
+        var title = new EmeraldLabel
         {
             Text = "ТРЕБУЕТСЯ РЕГИСТРАЦИЯ",
             HorizontalAlignment = HAlignment.Center,
-            FontColorOverride = Color.FromHex("#d4c5e8")
+            Alignment = EmeraldLabel.TextAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 4)
         };
         container.AddChild(title);
 
-        var message = new Label
+        var message = new EmeraldLabel
         {
             Text = "Перейдите по ссылке и зарегистрируйтесь в веб ресурсе.\nДля регистрации может потребоваться VPN.",
             HorizontalAlignment = HAlignment.Center,
             VerticalAlignment = VAlignment.Center,
-            FontColorOverride = Color.FromHex("#c0b3da")
+            Margin = new Thickness(0, 0, 0, 8)
         };
         container.AddChild(message);
 
-        var button = new Button
+        var button = new EmeraldButton
         {
             Text = "ПЕРЕЙТИ НА САЙТ",
-            HorizontalExpand = true,
-            MinSize = new Vector2(200, 40)
+            MinSize = new Vector2(200, 40),
+            HorizontalAlignment = HAlignment.Center,
+            Margin = new Thickness(0, 8, 0, 0)
         };
-        button.OnPressed += (args) =>
+
+        button.OnPressed += () =>
         {
             _url.OpenUri("https://deadspace14.net");
         };
@@ -401,33 +406,36 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
             VerticalExpand = true,
             HorizontalAlignment = HAlignment.Center,
             VerticalAlignment = VAlignment.Center,
-            SeparationOverride = 20
+            SeparationOverride = 16
         };
 
-        var title = new Label
+        var title = new EmeraldLabel
         {
             Text = "ОШИБКА",
             HorizontalAlignment = HAlignment.Center,
-            FontColorOverride = Color.FromHex("#FF6B6B")
+            Alignment = EmeraldLabel.TextAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 4)
         };
         container.AddChild(title);
 
-        var errorLabel = new Label
+        var errorLabel = new EmeraldLabel
         {
             Text = message,
             HorizontalAlignment = HAlignment.Center,
-            VerticalAlignment = VAlignment.Center,
-            FontColorOverride = Color.FromHex("#c0b3da")
+            Alignment = EmeraldLabel.TextAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 8)
         };
         container.AddChild(errorLabel);
 
-        var retryButton = new Button
+        var retryButton = new EmeraldButton
         {
             Text = "ПОПРОБОВАТЬ СНОВА",
-            HorizontalExpand = true,
-            MinSize = new Vector2(200, 40)
+            MinSize = new Vector2(220, 40),
+            HorizontalAlignment = HAlignment.Center,
+            Margin = new Thickness(0, 8, 0, 0)
         };
-        retryButton.OnPressed += (args) =>
+
+        retryButton.OnPressed += () =>
         {
             ShowLoading();
             _entManager.EntityNetManager.SendSystemNetworkMessage(new RequestUpdateDonateShop());
@@ -560,23 +568,30 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
         }
     }
 
-    private void UpdateInventoryContent(DonateShopState state)
+    private List<DonateItemData> GetAllItems(DonateShopState state)
     {
-        _categoryTabsContainer.RemoveAllChildren();
-        _categoryItemsPanel.RemoveAllChildren();
-
         var allItems = new List<DonateItemData>(state.Items);
 
         foreach (var sub in state.Subscribes)
         {
             foreach (var subItem in sub.Items)
             {
-                if (allItems.All(i => i.ItemIdInGame != subItem.ItemIdInGame))
+                if (allItems.All(i => i.ItemIdInGame != subItem.ItemIdInGame || subItem.ItemIdInGame == null))
                 {
                     allItems.Add(subItem);
                 }
             }
         }
+
+        return allItems;
+    }
+
+    private void UpdateInventoryContent(DonateShopState state)
+    {
+        _categoryTabsContainer.RemoveAllChildren();
+        _categoryItemsPanel.RemoveAllChildren();
+
+        var allItems = GetAllItems(state);
 
         if (allItems.Count == 0)
         {
@@ -592,9 +607,9 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
         }
 
         _categories = allItems
-            .GroupBy(i => i.Category)
-            .OrderBy(g => g.Key)
-            .Select(g => g.Key)
+            .Select(i => i.Category)
+            .Distinct()
+            .OrderBy(c => c)
             .ToList();
 
         foreach (var category in _categories)
@@ -609,10 +624,11 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
             _categoryTabsContainer.AddChild(categoryTab);
         }
 
-        if (_categories.Count > 0)
-        {
-            SwitchCategory(_categories[0]);
-        }
+        var targetCategory = _currentCategory != null && _categories.Contains(_currentCategory)
+            ? _currentCategory
+            : _categories[0];
+
+        SwitchCategory(targetCategory);
     }
 
     private void SwitchCategory(string category)
@@ -631,18 +647,7 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
         if (_state == null)
             return;
 
-        var allItems = new List<DonateItemData>(_state.Items);
-
-        foreach (var sub in _state.Subscribes)
-        {
-            foreach (var subItem in sub.Items)
-            {
-                if (allItems.All(i => i.ItemIdInGame != subItem.ItemIdInGame))
-                {
-                    allItems.Add(subItem);
-                }
-            }
-        }
+        var allItems = GetAllItems(_state);
 
         var categoryItems = allItems
             .Where(i => i.Category == category)
@@ -662,9 +667,9 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
             return;
         }
 
-        var itemsGrid = new GridContainer
+        _itemsGrid = new GridContainer
         {
-            Columns = 5,
+            Columns = CalculateColumns(),
             HorizontalExpand = true,
             VSeparationOverride = 8,
             HSeparationOverride = 8
@@ -680,7 +685,8 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
                 TimeAllways = item.TimeAllways,
                 IsActive = item.IsActive,
                 IsSpawned = _state.SpawnedItems.Contains(item.ItemIdInGame ?? ""),
-                IsTimeUp = _state.IsTimeUp
+                IsTimeUp = _state.IsTimeUp,
+                SourceSubscription = item.SourceSubscription
             };
 
             itemCard.OnSpawnRequest += protoId =>
@@ -688,9 +694,31 @@ public sealed class DonateShopWindow : EmeraldDefaultWindow
                 _entManager.EntityNetManager.SendSystemNetworkMessage(new DonateShopSpawnEvent(protoId));
             };
 
-            itemsGrid.AddChild(itemCard);
+            _itemsGrid.AddChild(itemCard);
         }
 
-        _categoryItemsPanel.AddChild(itemsGrid);
+        _categoryItemsPanel.AddChild(_itemsGrid);
+    }
+
+    private int CalculateColumns()
+    {
+        const float itemWidth = 145f;
+        const float spacing = 8f;
+        const float padding = 20f;
+
+        var availableWidth = Size.X - padding;
+        var columns = (int)((availableWidth + spacing) / (itemWidth + spacing));
+
+        return Math.Max(1, Math.Min(columns, 6));
+    }
+
+    protected override void Resized()
+    {
+        base.Resized();
+
+        if (_itemsGrid != null)
+        {
+            _itemsGrid.Columns = CalculateColumns();
+        }
     }
 }

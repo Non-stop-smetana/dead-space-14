@@ -11,6 +11,8 @@ public sealed partial class HolsterDrawComponent : Component
 {
     [DataField("actionProto")]
     public EntProtoId ActionProto = "ActionHolsterDrawBlueShield";
+    [DataField("weaponProto", required: true)]
+    public EntProtoId WeaponProto;
 
     [DataField]
     public EntityUid? ActionEntity;

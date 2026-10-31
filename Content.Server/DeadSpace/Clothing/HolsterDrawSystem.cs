@@ -6,7 +6,10 @@ using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Storage;
 using Content.Shared.Inventory;
 using Robust.Shared.Containers;
-using Robust.Shared.Prototypes;
+using Content.Shared.Hands.Components;
+using System.Linq;
+using Content.Shared.Popups;
+
 
 namespace Content.Server.Clothing;
 
@@ -14,20 +17,20 @@ public sealed class HolsterDrawSystem : EntitySystem
 {
     [Dependency] private readonly SharedHandsSystem _hands = default!;
     [Dependency] private readonly SharedContainerSystem _container = default!;
-    private const string RevolverProtoId = "WeaponRevolverBlueShieldKR19";
+    [Dependency] private readonly InventorySystem _inventory = default!;
+    [Dependency] private readonly SharedPopupSystem _popup = default!;
 
     public override void Initialize()
     {
         base.Initialize();
-
         SubscribeLocalEvent<HolsterDrawComponent, GetItemActionsEvent>(OnGetActions);
-
         SubscribeLocalEvent<HolsterDrawComponent, HolsterDrawActionEvent>(OnDrawAction);
     }
 
     private void OnGetActions(Entity<HolsterDrawComponent> ent, ref GetItemActionsEvent args)
     {
-        if (args.SlotFlags != SlotFlags.BELT)
+        if (!_inventory.TryGetSlotEntity(args.User, "belt", out var beltEntity)
+            || beltEntity != ent.Owner)
             return;
 
         args.AddAction(ref ent.Comp.ActionEntity, ent.Comp.ActionProto.Id, ent.Owner);
@@ -39,39 +42,62 @@ public sealed class HolsterDrawSystem : EntitySystem
             return;
 
         var user = args.Performer;
+
         if (!TryComp<StorageComponent>(ent, out var storage))
             return;
+        var targetProtoId = ent.Comp.WeaponProto.Id;
         var revolvers = new List<EntityUid>();
         foreach (var item in storage.Container.ContainedEntities)
         {
-            var meta = MetaData(item);
-            if (meta.EntityPrototype?.ID == RevolverProtoId)
+            if (MetaData(item).EntityPrototype?.ID == targetProtoId)
                 revolvers.Add(item);
         }
         if (revolvers.Count == 0)
             return;
-        foreach (var rev in revolvers)
+        if (!TryComp<HandsComponent>(user, out var hands))
+            return;
+
+        var freeHandIds = new List<string>();
+        foreach (var handId in hands.Hands.Keys)
         {
-            _container.Remove(rev, storage.Container);
+            if (_hands.HandIsEmpty(user, handId))
+                freeHandIds.Add(handId);
         }
-        if (revolvers.Count == 1)
+
+        if (freeHandIds.Count == 0)
         {
-            var activeHand = _hands.GetActiveHand(user);
-            _hands.TryPickup(user, revolvers[0], activeHand);
+            _popup.PopupEntity(
+                "Все ваши руки заняты! Вы не можете достать револьверы",
+                user,
+                user);
+            return;
+        }
+
+        var orderedHandIds = new List<string>(freeHandIds.Count);
+
+        var activeHandId = _hands.GetActiveHand((user, hands));
+
+        if (activeHandId != null && freeHandIds.Contains(activeHandId))
+        {
+            orderedHandIds.Add(activeHandId);
+            foreach (var handId in freeHandIds)
+            {
+                if (handId != activeHandId)
+                    orderedHandIds.Add(handId);
+            }
         }
         else
         {
-            var activeHand = _hands.GetActiveHand(user);
-            _hands.TryPickup(user, revolvers[0], activeHand);
+            orderedHandIds.AddRange(freeHandIds);
+        }
 
-            if (_hands.TryGetEmptyHand(user, out var secondHand))
-            {
-                _hands.TryPickup(user, revolvers[1], secondHand);
-            }
-            else
-            {
-                _hands.TryPickupAnyHand(user, revolvers[1]);
-            }
+        foreach (var rev in revolvers)
+            _container.Remove(rev, storage.Container);
+
+        var toDraw = Math.Min(revolvers.Count, orderedHandIds.Count);
+        for (var i = 0; i < toDraw; i++)
+        {
+            _hands.TryPickup(user, revolvers[i], orderedHandIds[i]);
         }
 
         args.Handled = true;

@@ -79,6 +79,7 @@
           - WeaponRevolverBlueShieldKR19
   - type: HolsterDraw
     actionProto: ActionHolsterDrawBlueShield
+    weaponProto: WeaponRevolverBlueShieldKR19
   - type: Appearance
   - type: ContainerContainer
     containers:

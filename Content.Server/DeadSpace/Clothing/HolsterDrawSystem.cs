@@ -93,30 +93,24 @@ public sealed class HolsterDrawSystem : EntitySystem
 
         var drawnCount = 0;
 
-        // Идём по списку свободных рук. Если револьверы закончатся раньше — выйдем из цикла.
         for (var i = 0; i < orderedHandIds.Count; i++)
         {
             if (drawnCount >= revolvers.Count)
-                break; // Револьверы закончились
+                break;
 
             var rev = revolvers[drawnCount];
             var handId = orderedHandIds[i];
 
-            // 1. Вынимаем револьвер из кобуры
             if (!_container.Remove(rev, storage.Container))
-                continue; // Если по какой-то причине не вынулся, идем к следующему
+                continue;
 
-            // 2. Пытаемся взять в руку
             if (_hands.TryPickup(user, rev, handId))
             {
-                drawnCount++; // Успешно взяли, увеличиваем счетчик
+                drawnCount++;
             }
             else
             {
-                // 3. Если взять не удалось (например, рука оказалась занята), 
-                // возвращаем револьвер обратно в кобуру, чтобы он не упал на пол!
                 _container.Insert(rev, storage.Container);
-                // Так как эта рука не сработала, дальше пытаться нет смысла
                 break;
             }
         }

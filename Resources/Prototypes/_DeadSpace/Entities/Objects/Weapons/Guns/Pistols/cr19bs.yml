@@ -20,3 +20,6 @@
   - type: UseDelay
     delay: 5
   - type: Akimbo
+  - type: Tag
+    tags:
+    - WeaponRevolverBlueShieldKR19

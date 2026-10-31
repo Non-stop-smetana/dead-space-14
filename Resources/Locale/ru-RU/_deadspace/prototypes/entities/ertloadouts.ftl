@@ -139,7 +139,7 @@ ert-loadout-category-duelistbs-name = Набор "Дуэлянт"
 ert-loadout-category-duelistbs-description =
     Пора вспомнить былые времена, битвы и перестрелки в пустыне.
     Не забудьте закурить сигарету, ведь ваша служба уже началась.
-    Набор содержит пончо с подсумками, шляпа и 2 пистолета КР-19.
+    Набор содержит пончо с подсумками, шляпу, кобуру и 2 пистолета КР-19.
     К револьверам КР-19 идут несколько спидлоадеров и коробка .45 магнум.
 ert-loadout-category-mk79tactical-name = МК-79 "tactical"
 ert-loadout-category-mk79tactical-description =

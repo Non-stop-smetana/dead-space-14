@@ -525,6 +525,9 @@
   id: WriteReWrite
 
 - type: Tag
+  id: WeaponRevolverBlueShieldKR19
+
+- type: Tag
   id: YellowFlower
 
 - type: Tag

@@ -46,20 +46,22 @@
   parent: [ClothingHeadBase, BaseCommandContraband]
   id: ClothingHeadHatBlueShield
   name: шляпа офицера "Синий Щит"
-  description: Стильная ковбойская шляпа, с ленточкой и золотой эмблемой Корпуса "Синий Щит". Внутренность шляпы обшита пулестойким материалом.
+  description: Стильная ковбойская шляпа, с ленточкой и золотой эмблемой Корпуса "Синий Щит". Внутренность шляпы обшита пулестойким материалом, а также имеется место под какие-то детали, похоже требуется разобрать шлем СЩ дабы укрепить эту шляпу.
   components:
   - type: Sprite
     sprite: _DeadSpace/Clothing/Head/Hats/cowboy_hat_bs.rsi
   - type: Clothing
     sprite: _DeadSpace/Clothing/Head/Hats/cowboy_hat_bs.rsi
-  - type: Tag
-    tags:
-    - PetWearable
-    - CorgiWearable
-    - ClothMade
-    - Recyclable
-    - HamsterWearable
-    - WhitelistChameleon
+  - type: Construction
+    graph: BlueShieldHatUpdateArmor
+    node: start
+
+- type: entity
+  parent: ClothingHeadHatBlueShield
+  id: ClothingHeadHatBlueShieldArmor
+  name: шляпа офицера "Синий Щит"
+  description: Стильная ковбойская шляпа, с ленточкой и золотой эмблемой Корпуса "Синий Щит". Внутренность шляпы обшита пулестойким материалом, а между тканями можно увидеть детали шлема ОСЩ.
+  components:
   - type: Armor
     modifiers:
       coefficients:

@@ -50,6 +50,9 @@
   id: BluespaceHandHeldMassScanner
 
 - type: Tag
+  id: BlueShieldHatUpdateArmor
+
+- type: Tag
   id: DarkFlower
 
 - type: Tag
